@@ -18,8 +18,11 @@
 
 package org.ballerinax.awslambda;
 
+import io.ballerina.projects.Document;
+import io.ballerina.projects.DocumentId;
 import io.ballerina.projects.Project;
 import io.ballerina.projects.internal.model.Target;
+import io.ballerina.tools.diagnostics.Diagnostic;
 import io.ballerina.tools.diagnostics.DiagnosticSeverity;
 import io.ballerina.tools.diagnostics.Location;
 import org.ballerinalang.compiler.plugins.AbstractCompilerPlugin;
@@ -79,6 +82,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -411,11 +415,25 @@ public class AWSLambdaPlugin extends AbstractCompilerPlugin {
     }
 
     @Override
+    public List<Diagnostic> codeAnalyze(Project project) {
+        ProjectModifier projectModifier = new ProjectModifier(project);
+        projectModifier.addMainFuncToDocs();
+        DocumentId next = project.currentPackage().getDefaultModule().documentIds().iterator().next();
+        Document document = project.currentPackage().getDefaultModule().document(next);
+        OUT.println(document.syntaxTree().toSourceCode());
+        project.currentPackage().getResolution();
+        return Collections.emptyList();
+    }
+
+    @Override
     public void codeGenerated(Project project, Target target) {
         if (AWSLambdaPlugin.generatedFuncs.isEmpty()) {
             // no lambda functions, nothing else to do
             return;
         }
+        DocumentId next = project.currentPackage().getDefaultModule().documentIds().iterator().next();
+        Document document = project.currentPackage().getDefaultModule().document(next);
+        OUT.println(document.syntaxTree().toSourceCode());
         OUT.println("\t@awslambda:Function: " + String.join(", ", AWSLambdaPlugin.generatedFuncs));
         String balxName;
         try {
